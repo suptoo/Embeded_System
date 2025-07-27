@@ -1,0 +1,43 @@
+; Memory addresses of GPIO port A and RCC (reset and clock control) data structure
+GPIOA_BASE EQU 0x40010800
+RCC_BASE EQU 0x40021000
+
+; Byte offset of each register in GPIO and RCC
+RCC_APB2ENR EQU 0x18
+GPIO_CRL EQU 0x00
+GPIO_ODR EQU 0x0C
+
+AREA main, CODE, READONLY
+EXPORT __main ; make __main visible to Linker
+ENTRY
+
+__main PROC
+
+; Enable the clock to GPIO port A
+; Load address of reset and clock control (RCC)
+LDR r2, =RCC_BASE ; Load base address of RCC into r2
+LDR r1, [r2, #RCC_APB2ENR] ; Load the value of RCC_APB2ENR into r1
+ORR r1, r1, #(1 << 2) ; Set bit 2 (IOPAEN) to enable GPIOA clock
+STR r1, [r2, #RCC_APB2ENR] ; Store the updated value back into RCC_APB2ENR
+
+; Load GPIO port A base address
+LDR r3, =GPIOA_BASE ; Load the base address of GPIOA into r3
+
+; Configure pin PA5 as general-purpose output push-pull
+; with max speed of 50 MHz
+LDR r1, [r3, #GPIO_CRL] ; Load the value of GPIOA_CRL into r1
+BIC r1, r1, #(15 << 20) ; Clear bits 23:20 belonging to pin 5
+ORR r1, r1, #(3 << 20) ; Set bits 23:20 to 0011, configuring PA5
+; as output with max speed 50 MHz
+STR r1, [r3, #GPIO_CRL] ; Store the updated value back into GPIOA_CRL
+
+; Set PA5 high to turn on the LED
+LDR r1, [r3, #GPIO_ODR] ; Load the value of GPIOA_ODR into r1
+ORR r1, r1, #(1 << 5) ; Set bit 5 to 1, which sets PA5 high
+STR r1, [r3, #GPIO_ODR] ; Store the updated value back into GPIOA_ODR
+
+stop
+B stop ; Infinite loop to keep the program running
+ENDP
+
+END
